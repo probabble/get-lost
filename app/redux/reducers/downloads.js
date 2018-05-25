@@ -45,36 +45,51 @@ const downloadsReducer = (state: Object = initialState, action: Object) => {
       break;
     }
     case UPDATE_DOWNLOAD_PROGRESS: {
-      const { id, received, total } = payload;
-      let lib = getAssetLib(state);
-      let asset = lib[id];
-
-      lib[id].downloadProgress = Object.assign({}, asset["downloadProgress"], {
-        received: received,
-        total: total,
-        status: 'downloading'
+      let { id, received, total } = payload;
+      const assetState = state.library[id];
+      const assetUpdates = Object.assign({}, assetState, {
+        downloadProgress: {
+          received: received,
+          total: total,
+        }
       });
 
+      const newAssetState = Object.assign({}, assetState, assetUpdates);
+
+      const library = getAssetLib(state);
+      library[id] = newAssetState;
       newState = {
-        library: lib
+        library: library
       };
       break;
     }
 
     case REGISTER_ASSET: {
-      const asset = payload;
-      let lib = getAssetLib(state);
-      if (lib[asset.id]) {
-        break;
+      let assets = payload;
+      if (!Array.isArray(assets)) {
+        assets = [assets];
       }
-      lib[asset.id] = {
-        path: null,
-        status: "new",
-        downloadProgress: {},
-        data: asset
-      };
+      let lib = state.library;
+      const newLib = {};
+      assets.forEach(asset => {
+        if (newLib[asset.id]) {
+          return;
+        }
+        newLib[asset.id] = {
+          path: null,
+          status: "new",
+          downloadProgress: {
+            received: 0,
+            total: 100,
+            status: "not started"
+          },
+          data: asset
+        };
+      });
+
+      const library = Object.assign({}, lib, newLib);
       newState = {
-        library: lib
+        library: library
       };
       break;
     }
@@ -87,7 +102,7 @@ const downloadsReducer = (state: Object = initialState, action: Object) => {
       break;
     }
     default: {
-      newState = state;
+      newState = {};
       break;
     }
   }

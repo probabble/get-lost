@@ -2,7 +2,11 @@ import React, { Component } from "react";
 import { Button, Image, Text, View } from "react-native";
 import { Link } from "react-router-native";
 import { connect } from "react-redux";
-import { collectAssets, fetchDownload } from "../redux/actions/downloads";
+import {
+  collectAssets,
+  fetchDownload,
+  removeAllMedia
+} from "../redux/actions/downloads";
 import * as constants from "../constants/constants";
 import { audioPlayerStyles as styles } from "../styles";
 
@@ -23,18 +27,31 @@ const ProgressBar = props => {
   if (!props.progress) {
     return null;
   }
-  const percent = props.progress.received / props.progress.total * 100;
+  let received, total;
+  if (props.progress.status === "success") {
+    received = 100;
+    total = 100;
+  } else {
+    received = props.progress.received;
+    total = props.progress.total;
+  }
+  const percent = (received / total * 100).toPrecision(2);
+
   const style = {
     width: `${percent}%`,
     height: 20,
     backgroundColor: "#658551"
   };
+
   return (
     <View style={{ width: "100%" }}>
       <Text key="label"> {props.label} </Text>
       <View key="bar" style={style} />
-      <Text key="number">{`${percent} percent`}</Text>
-      <Text key="status">{props.progress.status}</Text>
+      {props.progress.status !== "success" ? (
+        <Text key="number">{`${percent}%`}</Text>
+      ) : (
+        <Text key="status">{props.progress.status}</Text>
+      )}
     </View>
   );
 };
@@ -63,11 +80,15 @@ class AudioPlayer extends Component {
     return (
       <View style={styles.container}>
         <Text style={styles.text} key="title">
-          {" "}
-          a u d i o{" "}
+          a u d i o
         </Text>
         <Text key="files">{this.props.files}</Text>
         <ProgressBars library={this.props.library} />
+        <Button
+          style={{ backgroundColor: "#f8f" }}
+          onPress={this.props.removeAllMedia}
+          title={"remove all media"}
+        />
         <Link to="/" component={Button} title="home">
           H O M E
         </Link>
@@ -86,6 +107,7 @@ const mapStateToProps = state => {
 
 const ConnectedAudioPlayer = connect(mapStateToProps, {
   collectAssets,
-  fetchDownload
+  fetchDownload,
+  removeAllMedia
 })(AudioPlayer);
 export default ConnectedAudioPlayer;
