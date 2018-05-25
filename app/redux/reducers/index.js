@@ -1,9 +1,9 @@
-import downloadsReducer from './downloads';
-import {combineReducers} from "redux";
+import downloadsReducer from "./downloads";
+import { combineReducers } from "redux";
 
 // Root Reducer
 const rootReducer = combineReducers({
-    downloads: downloadsReducer,
+  downloads: downloadsReducer
 });
 
 export default rootReducer;
