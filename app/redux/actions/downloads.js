@@ -11,14 +11,15 @@ import * as constants from "../../constants/constants";
 const { fs } = RNFetchBlob;
 const { ASSET_STORAGE_DIR } = constants;
 
-const removeAllMedia = () => async dispatch => {
+
+export const removeAllMedia = () => async dispatch => {
   await dispatch(configureStorage());
   await fs.unlink(ASSET_STORAGE_DIR);
   await dispatch(configureStorage());
   await dispatch({type: REGISTER_ASSET, payload: constants.AUDIO_TRACKS});
 };
 
-const configureStorage = () => async dispatch => {
+export const configureStorage = () => async dispatch => {
   const asset_directory_exists = await fs.isDir(ASSET_STORAGE_DIR);
   if (!asset_directory_exists) {
     return await fs.mkdir(ASSET_STORAGE_DIR);
@@ -26,19 +27,19 @@ const configureStorage = () => async dispatch => {
   return RSVP.Promise.resolve();
 };
 
-const collectAssets = assets => async dispatch => {
+export const collectAssets = assets => async dispatch => {
   await dispatch(configureStorage());
   const existing_assets = await readFS();
   assets.forEach(asset => {
     dispatch({type: REGISTER_ASSET, payload: asset});
-    if (existing_assets.indexOf(asset.id.toString()) === -1) {
+    if (existing_assets.indexOf(asset.filename) === -1) {
       dispatch(fetchDownload(asset));
     } else {
       dispatch({
         type: UPDATE_DOWNLOAD_PROGRESS,
         payload: { id: asset.id, received: 100, total: 100 }
       });
-      dispatch({ type: FETCH_DATA_SUCCESS, payload: { id: asset.id } });
+      dispatch({ type: FETCH_DATA_SUCCESS, payload: { asset } });
     }
   });
 };
@@ -47,10 +48,10 @@ const readFS = async () => {
   return fs.ls(ASSET_STORAGE_DIR);
 };
 
-const fetchDownload = ({ name, remote_src, id }) => async dispatch => {
+export const fetchDownload = ({ name, remote_src, id, filename }) => async dispatch => {
   RNFetchBlob.config({
     // add this option that makes response data to be stored as a file,
-    // this is much more performant.
+    // this is much more gooder.
     fileCache: true,
     timeout: 600 * 1000 // milliseconds
   })
@@ -62,7 +63,7 @@ const fetchDownload = ({ name, remote_src, id }) => async dispatch => {
       });
     })
     .then(async res => {
-      const assetLocation = `${ASSET_STORAGE_DIR}/${id}`;
+      const assetLocation = `${ASSET_STORAGE_DIR}/${filename}`;
       fs.mv(res.data, assetLocation);
       dispatch({
         type: FETCH_DATA_SUCCESS,
@@ -71,4 +72,7 @@ const fetchDownload = ({ name, remote_src, id }) => async dispatch => {
     });
 };
 
-export { fetchDownload, collectAssets, removeAllMedia };
+
+export const setAudioProgress = payload => dispatch => {
+  dispatch({type: actionTypes.SET_AUDIO_PROGRESS, payload: payload});
+};

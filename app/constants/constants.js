@@ -4,15 +4,10 @@ const { fs } = RNFetchBlob;
 const AUDIO_TRACKS = [
   {
     id: 1,
-    name: "Hold Music",
+    name: "Re-Enactment For Nerds",
     remote_src:
-      "https://s3-us-west-1.amazonaws.com/starteleweb/audio/hold_music.wav"
-  },
-  {
-    id: 2,
-    name: "How To Dial",
-    remote_src:
-      "https://s3-us-west-1.amazonaws.com/starteleweb/audio/how_to_dial.wav"
+    "https://s3-us-west-1.amazonaws.com/get.lost.media/80+_-_+580+_-_+101+PODCAST+_+RE-ENACTMENT+FOR+NERDS.mp3",
+    filename: 're-enactment.mp3'
   }
 ];
 

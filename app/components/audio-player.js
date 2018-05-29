@@ -5,10 +5,11 @@ import { connect } from "react-redux";
 import {
   collectAssets,
   fetchDownload,
-  removeAllMedia
+  removeAllMedia, setAudioProgress
 } from "../redux/actions/downloads";
 import * as constants from "../constants/constants";
 import { audioPlayerStyles as styles } from "../styles";
+import Video from "react-native-video";
 
 const ContentItem = props => {
   if (!props.filePath) {
@@ -72,18 +73,89 @@ const ProgressBars = props => {
   });
 };
 
+class Track extends Component {
+  onError = err => {
+    console.error(err);
+  };
+
+  state = {
+    paused: false
+  };
+
+  onLoadStart = src => {};
+
+  onProgress = progress => {
+    const payload = {
+      progress: progress,
+      trackId: this.props.track.data.id
+    };
+    this.props.setAudioProgress(payload);
+  };
+
+  togglePause = () => {
+    this.setState({paused: !this.state.paused});
+  };
+
+  render = () => {
+    const track = this.props.track;
+    if (track.status !== "ready") {
+      return null;
+    }
+
+    return (
+      <View>
+        <Video
+          source={{ uri: track.path }}
+          playInBackground={true}
+          rate={1.0}
+          paused={this.state.paused}
+          volume={1.0}
+          ref={ref => {
+            this.player = ref;
+          }}
+          onLoadStart={this.onLoadStart}
+          onLoad={() => {
+            this.player.seek(track.progress.currentTime);
+          }}
+          onError={this.onError}
+          onProgress={this.onProgress}
+          playWhenInactive={false} // [iOS] Video continues to play when control or notification center are shown.
+          ignoreSilentSwitch={"ignore"} // [iOS] ignore | obey - When 'ignore', audio will still play with the iOS hard silent switch set to silent. When 'obey', audio will toggle with the switch. When not specified, will inherit audio settings as usual.
+          progressUpdateInterval={250.0}
+        />
+        <Button
+          title={this.state.paused ? "play" : "pause"}
+          onPress={this.togglePause}
+        />
+      </View>
+    );
+  };
+}
+
+Track = connect(state => ({ library: state.downloads.library }), {
+  setAudioProgress
+})(Track);
+
 class AudioPlayer extends Component {
   componentDidMount() {
     this.props.collectAssets(constants.AUDIO_TRACKS);
   }
   render() {
+    if (!this.props.library) {
+      return null;
+    }
     return (
       <View style={styles.container}>
         <Text style={styles.text} key="title">
           a u d i o
         </Text>
-        <Text key="files">{this.props.files}</Text>
         <ProgressBars library={this.props.library} />
+        {Object.keys(this.props.library).map(trackId => {
+          const track = this.props.library[trackId];
+          if (track.status === "ready") {
+            return <Track key={track.data.id} track={track} />;
+          }
+        })}
         <Button
           style={{ backgroundColor: "#f8f" }}
           onPress={this.props.removeAllMedia}
@@ -108,6 +180,7 @@ const mapStateToProps = state => {
 const ConnectedAudioPlayer = connect(mapStateToProps, {
   collectAssets,
   fetchDownload,
-  removeAllMedia
+  removeAllMedia,
+  setAudioProgress
 })(AudioPlayer);
 export default ConnectedAudioPlayer;
