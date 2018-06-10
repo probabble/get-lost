@@ -6,7 +6,7 @@ import {
   FETCH_DATA_SUCCESS,
   UPDATE_DOWNLOAD_PROGRESS,
   REGISTER_ASSET,
-  SET_AUDIO_PROGRESS
+  SET_AUDIO_PROGRESS, SET_STATE
 } from "../../constants/action-types";
 import { getAssetLib, getAssetPath } from "../../utils";
 import * as ACTION_TYPES from "../../constants/action-types";
@@ -59,7 +59,10 @@ const downloadsReducer = (state: Object = initialState, action: Object) => {
       };
       break;
     }
-
+    case SET_STATE: {
+      newState = payload;
+      break;
+    }
     case REGISTER_ASSET: {
       let assets = payload;
       if (!Array.isArray(assets)) {
@@ -68,7 +71,7 @@ const downloadsReducer = (state: Object = initialState, action: Object) => {
       let lib = state.library;
       const newLib = {};
       assets.forEach(asset => {
-        if (newLib[asset.id]) {
+        if (lib[asset.id]) {
           return;
         }
         newLib[asset.id] = {
@@ -78,13 +81,6 @@ const downloadsReducer = (state: Object = initialState, action: Object) => {
             received: 0,
             total: 100,
             status: "not started"
-          },
-          progress: {
-            currentTime: 0
-          },
-          playing: {
-            volume: 1,
-            rate: 1
           },
           data: asset
         };

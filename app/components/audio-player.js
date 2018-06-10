@@ -4,8 +4,8 @@ import { Link } from "react-router-native";
 import { connect } from "react-redux";
 import {
   collectAssets,
-  fetchDownload,
-  removeAllMedia, setAudioProgress
+  fetchDownload, loadPlayerState,
+  removeAllMedia, savePlayerState, setAudioProgress
 } from "../redux/actions/downloads";
 import * as constants from "../constants/constants";
 import { audioPlayerStyles as styles } from "../styles";
@@ -79,12 +79,16 @@ class Track extends Component {
   };
 
   state = {
-    paused: false
+    paused: true,
+    didLoad: false
   };
 
   onLoadStart = src => {};
 
   onProgress = progress => {
+    if (!this.state.didLoad || progress.currentTime === 0) {
+      return;
+    }
     const payload = {
       progress: progress,
       trackId: this.props.track.data.id
@@ -113,9 +117,10 @@ class Track extends Component {
           ref={ref => {
             this.player = ref;
           }}
-          onLoadStart={this.onLoadStart}
+          onLoadStart={()=>{}}
           onLoad={() => {
             this.player.seek(track.progress.currentTime);
+            this.setState({paused: false, didLoad: true});
           }}
           onError={this.onError}
           onProgress={this.onProgress}
@@ -138,7 +143,10 @@ Track = connect(state => ({ library: state.downloads.library }), {
 
 class AudioPlayer extends Component {
   componentDidMount() {
-    this.props.collectAssets(constants.AUDIO_TRACKS);
+    this.props.loadPlayerState();
+  }
+  componentWillUnmount() {
+    this.props.savePlayerState(this.props.library);
   }
   render() {
     if (!this.props.library) {
@@ -181,6 +189,8 @@ const ConnectedAudioPlayer = connect(mapStateToProps, {
   collectAssets,
   fetchDownload,
   removeAllMedia,
-  setAudioProgress
+  setAudioProgress,
+  savePlayerState,
+  loadPlayerState
 })(AudioPlayer);
 export default ConnectedAudioPlayer;

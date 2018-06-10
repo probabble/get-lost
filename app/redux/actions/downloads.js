@@ -3,20 +3,40 @@ import RNFetchBlob from "react-native-fetch-blob";
 import * as actionTypes from "../../constants/action-types";
 const {
   FETCH_DATA_SUCCESS, REGISTER_ASSET,
-  UPDATE_DOWNLOAD_PROGRESS
+  UPDATE_DOWNLOAD_PROGRESS, SET_STATE
 } = actionTypes;
 
 import RSVP from "rsvp";
 import * as constants from "../../constants/constants";
+
+import React from "react-native"
+const { AsyncStorage } = React;
+
 const { fs } = RNFetchBlob;
 const { ASSET_STORAGE_DIR } = constants;
 
+export const loadPlayerState = () => async dispatch => {
+  let library = await AsyncStorage.getItem('library');
+  let libraryAssets = constants.AUDIO_TRACKS;
+
+  if (library) {
+    library = JSON.parse(library);
+    await dispatch({type: SET_STATE, payload: {'library': library}});
+  }
+
+  dispatch(collectAssets(libraryAssets));
+
+};
+
+export const savePlayerState = (playerState) => async dispatch => {
+  await AsyncStorage.setItem('library', JSON.stringify(playerState));
+};
 
 export const removeAllMedia = () => async dispatch => {
   await dispatch(configureStorage());
   await fs.unlink(ASSET_STORAGE_DIR);
-  await dispatch(configureStorage());
-  await dispatch({type: REGISTER_ASSET, payload: constants.AUDIO_TRACKS});
+  await AsyncStorage.removeItem('library');
+  await dispatch(loadPlayerState())
 };
 
 export const configureStorage = () => async dispatch => {
