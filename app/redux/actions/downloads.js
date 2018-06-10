@@ -10,6 +10,7 @@ import RSVP from "rsvp";
 import * as constants from "../../constants/constants";
 
 import React from "react-native"
+import { FETCH_DATA_REQUEST } from "../../constants/action-types";
 const { AsyncStorage } = React;
 
 const { fs } = RNFetchBlob;
@@ -17,14 +18,15 @@ const { ASSET_STORAGE_DIR } = constants;
 
 export const loadPlayerState = () => async dispatch => {
   let library = await AsyncStorage.getItem('library');
-  let libraryAssets = constants.AUDIO_TRACKS;
 
   if (library) {
     library = JSON.parse(library);
     await dispatch({type: SET_STATE, payload: {'library': library}});
   }
-
-  dispatch(collectAssets(libraryAssets));
+  else {
+    await dispatch({type: SET_STATE, payload: {'library': {}}});
+  }
+  dispatch(collectAssets(library || {}));
 
 };
 
@@ -47,19 +49,26 @@ export const configureStorage = () => async dispatch => {
   return RSVP.Promise.resolve();
 };
 
-export const collectAssets = assets => async dispatch => {
+export const collectAssets = library => async dispatch => {
+  const assets = constants.AUDIO_TRACKS;
+
   await dispatch(configureStorage());
   const existing_assets = await readFS();
-  assets.forEach(asset => {
-    dispatch({type: REGISTER_ASSET, payload: asset});
+  assets.forEach(async asset => {
+
+    await dispatch({type: REGISTER_ASSET, payload: asset});
+
     if (existing_assets.indexOf(asset.filename) === -1) {
+      if (library[asset.id] && library[asset.id].status === 'downloading') {
+        return;
+      }
       dispatch(fetchDownload(asset));
     } else {
       dispatch({
         type: UPDATE_DOWNLOAD_PROGRESS,
         payload: { id: asset.id, received: 100, total: 100 }
       });
-      dispatch({ type: FETCH_DATA_SUCCESS, payload: { asset } });
+      dispatch({ type: FETCH_DATA_SUCCESS, payload: asset });
     }
   });
 };
@@ -68,7 +77,10 @@ const readFS = async () => {
   return fs.ls(ASSET_STORAGE_DIR);
 };
 
-export const fetchDownload = ({ name, remote_src, id, filename }) => async dispatch => {
+export const fetchDownload = props => async dispatch => {
+  const { name, remote_src, id, filename } = props;
+
+  dispatch({type: FETCH_DATA_REQUEST, payload: props});
   RNFetchBlob.config({
     // add this option that makes response data to be stored as a file,
     // this is much more gooder.
@@ -87,7 +99,7 @@ export const fetchDownload = ({ name, remote_src, id, filename }) => async dispa
       fs.mv(res.data, assetLocation);
       dispatch({
         type: FETCH_DATA_SUCCESS,
-        payload: { id: id, location: assetLocation, name: name }
+        payload: { id: id, location: assetLocation, name: name, filename: filename }
       });
     });
 };

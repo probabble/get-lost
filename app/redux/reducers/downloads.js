@@ -21,11 +21,11 @@ const downloadsReducer = (state: Object = initialState, action: Object) => {
   const { payload } = action;
   switch (action.type) {
     case FETCH_DATA_SUCCESS: {
-      let lib = state.library;
-      const { id } = payload.asset;
+      let lib = state.library || {} ;
+      const { id } = payload;
       lib[id].downloadProgress["status"] = "success";
       lib[id].status = "ready";
-      lib[id].path = getAssetPath(payload.asset);
+      lib[id].path = getAssetPath(payload);
       lib[id].progress = lib[id].progress || {};
       newState = {
         library: lib
@@ -34,9 +34,16 @@ const downloadsReducer = (state: Object = initialState, action: Object) => {
     }
 
     case FETCH_DATA_REQUEST: {
+      const {id} = payload;
+      const assetState = state.library[id];
+      const newAssetState = Object.assign({}, assetState,  {
+        status: "downloading"
+      });
+
+      const library = getAssetLib(state);
+      library[id] = newAssetState;
       newState = {
-        isLoading: true,
-        error: false
+        library: library
       };
       break;
     }
@@ -68,7 +75,7 @@ const downloadsReducer = (state: Object = initialState, action: Object) => {
       if (!Array.isArray(assets)) {
         assets = [assets];
       }
-      let lib = state.library;
+      let lib = state.library || {};
       const newLib = {};
       assets.forEach(asset => {
         if (lib[asset.id]) {

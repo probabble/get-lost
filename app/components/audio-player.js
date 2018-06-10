@@ -83,7 +83,7 @@ class Track extends Component {
   };
 
   render = () => {
-    const { track } = this.props;
+    const { track, status } = this.props;
     if (!track.downloadProgress) {
       return null;
     }
@@ -96,7 +96,7 @@ class Track extends Component {
           trackId={track.data.id}
                      downloadProgress={track.downloadProgress}
                      playProgress={track.progress}/>
-        {track.status === 'ready' ? <Video
+        {status === 'ready' ? <Video
           source={{ uri: track.path }}
           playInBackground={true}
           rate={1.0}
@@ -116,10 +116,11 @@ class Track extends Component {
           ignoreSilentSwitch={"ignore"} // [iOS] ignore | obey - When 'ignore', audio will still play with the iOS hard silent switch set to silent. When 'obey', audio will toggle with the switch. When not specified, will inherit audio settings as usual.
           progressUpdateInterval={250.0}
         /> : null}
+        {status === 'ready' ?
         <Button
           title={this.state.paused ? "play" : "pause"}
           onPress={this.togglePause}
-        />
+        /> : null}
       </View>
     );
   };
@@ -147,9 +148,7 @@ class AudioPlayer extends Component {
         </Text>
         {Object.keys(this.props.library).map(trackId => {
           const track = this.props.library[trackId];
-          if (track.status === "ready") {
-            return <Track key={track.data.id} track={track} />;
-          }
+          return <Track key={track.data.id} track={track} status={track.status}/>;
         })}
         <Button
           style={{ backgroundColor: "#f8f" }}
