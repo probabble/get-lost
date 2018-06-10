@@ -101,9 +101,17 @@ const downloadsReducer = (state: Object = initialState, action: Object) => {
     }
 
     case FETCH_DATA_ERROR: {
+      const {id} = payload;
+      const assetState = state.library[id];
+      const newAssetState = Object.assign({}, assetState,  {
+        status: "fetch error",
+        downloadProgress: Object.assign({}, assetState.downloadProgress, {status: 'failed'})
+      });
+
+      const library = getAssetLib(state);
+      library[id] = newAssetState;
       newState = {
-        isLoading: false,
-        error: true
+        library: library
       };
       break;
     }

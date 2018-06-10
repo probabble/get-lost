@@ -11,6 +11,7 @@ import * as constants from "../../constants/constants";
 
 import React from "react-native"
 import { FETCH_DATA_REQUEST } from "../../constants/action-types";
+import { FETCH_DATA_ERROR } from "../../constants/action-types";
 const { AsyncStorage } = React;
 
 const { fs } = RNFetchBlob;
@@ -101,7 +102,12 @@ export const fetchDownload = props => async dispatch => {
         type: FETCH_DATA_SUCCESS,
         payload: { id: id, location: assetLocation, name: name, filename: filename }
       });
-    });
+    }).catch(err => {
+      dispatch({
+        type: FETCH_DATA_ERROR,
+        payload: { id: id, name: name, filename: filename, err: err }
+      })
+  });
 };
 
 
