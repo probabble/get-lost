@@ -25,52 +25,34 @@ const ContentItem = props => {
 };
 
 const ProgressBar = props => {
-  if (!props.progress) {
-    return null;
-  }
-  let received, total;
-  if (props.progress.status === "success") {
-    received = 100;
-    total = 100;
+  const {
+    downloadProgress, playProgress, trackId, label
+  } = props;
+
+  let percent;
+  if (downloadProgress.status === "success") {
+    percent = 100;
   } else {
-    received = props.progress.received;
-    total = props.progress.total;
+    let received = downloadProgress.received;
+    let total = downloadProgress.total;
+    percent = (received / total * 100).toPrecision(3);
+
   }
-  const percent = (received / total * 100).toPrecision(2);
 
   const style = {
     width: `${percent}%`,
-    height: 20,
-    backgroundColor: "#658551"
+    height: 30,
+    backgroundColor: "#855e76"
   };
 
   return (
-    <View style={{ width: "100%" }}>
-      <Text key="label"> {props.label} </Text>
-      <View key="bar" style={style} />
-      {props.progress.status !== "success" ? (
+    <View >
+      <View key={`progress-${trackId}`} style={style} > <Text>{label}</Text> </View>
+      {downloadProgress.status !== "success" ? (
         <Text key="number">{`${percent}%`}</Text>
-      ) : (
-        <Text key="status">{props.progress.status}</Text>
-      )}
+      ) : null }
     </View>
   );
-};
-
-const ProgressBars = props => {
-  if (!props.library) {
-    return null;
-  }
-  return Object.keys(props.library).map(id => {
-    const asset = props.library[id];
-    return (
-      <ProgressBar
-        key={id}
-        label={asset.name}
-        progress={asset.downloadProgress}
-      />
-    );
-  });
 };
 
 class Track extends Component {
@@ -101,14 +83,20 @@ class Track extends Component {
   };
 
   render = () => {
-    const track = this.props.track;
-    if (track.status !== "ready") {
+    const { track } = this.props;
+    if (!track.downloadProgress) {
       return null;
     }
-
     return (
-      <View>
-        <Video
+      <View           style={{ width: "100%" }}
+      >
+        <ProgressBar
+          label={track.data.name}
+          style={{ height: 50, width: "100%" }}
+          trackId={track.data.id}
+                     downloadProgress={track.downloadProgress}
+                     playProgress={track.progress}/>
+        {track.status === 'ready' ? <Video
           source={{ uri: track.path }}
           playInBackground={true}
           rate={1.0}
@@ -127,7 +115,7 @@ class Track extends Component {
           playWhenInactive={false} // [iOS] Video continues to play when control or notification center are shown.
           ignoreSilentSwitch={"ignore"} // [iOS] ignore | obey - When 'ignore', audio will still play with the iOS hard silent switch set to silent. When 'obey', audio will toggle with the switch. When not specified, will inherit audio settings as usual.
           progressUpdateInterval={250.0}
-        />
+        /> : null}
         <Button
           title={this.state.paused ? "play" : "pause"}
           onPress={this.togglePause}
@@ -157,7 +145,6 @@ class AudioPlayer extends Component {
         <Text style={styles.text} key="title">
           a u d i o
         </Text>
-        <ProgressBars library={this.props.library} />
         {Object.keys(this.props.library).map(trackId => {
           const track = this.props.library[trackId];
           if (track.status === "ready") {
